@@ -1,0 +1,16 @@
+name: Purge jsDelivr cache
+on:
+  push:
+    branches: [main]
+
+jobs:
+  purge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Purge @main cached files
+        run: |
+          for file in revolve-reveals.min.js revolve-reveals.js; do
+            echo "Purging ${file}"
+            curl -s -o /dev/null -w "HTTP %{http_code}\n" \
+              "https://purge.jsdelivr.net/gh/${{ github.repository }}@main/${file}"
+          done
