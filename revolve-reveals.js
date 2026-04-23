@@ -73,8 +73,8 @@
   // ---------- scroll reveals ----------
 
   var SCROLL_REVEALS = [
-    { cls: 'text-reveal',  y: 12, dur: 0.6, ease: 'power2.out', start: 'top 80%', stagger: null },
-    { cls: 'block-reveal', y: 16, dur: 0.7, ease: 'expo.out',   start: 'top 80%', stagger: 0.08 }
+    { cls: 'text-reveal',  y: 12, dur: 0.6, ease: 'power2.out', start: 'top 70%', stagger: null },
+    { cls: 'block-reveal', y: 16, dur: 0.7, ease: 'expo.out',   start: 'top 70%', stagger: 0.15 }
   ];
 
   // Nearest ancestor (max 6 levels up) that holds 2+ same-class reveals.
@@ -119,7 +119,7 @@
         el.dataset.revealArmed = '1';
 
         if (cfg.stagger) {
-          var ancestor = nearestGroupAncestor(el, cfg.cls, 6);
+          var ancestor = nearestGroupAncestor(el, cfg.cls, 3);
           if (ancestor) {
             if (!groupsByAncestor.has(ancestor)) groupsByAncestor.set(ancestor, []);
             groupsByAncestor.get(ancestor).push(el);
