@@ -121,6 +121,20 @@
 
   // ---------- hero reveal ----------
 
+  function primeLineMask(el, distMul) {
+    if (!el) return null;
+    if (window.SplitText) {
+      try {
+        var split = new SplitText(el, { type: 'lines', linesClass: 'reveal-line', mask: 'lines' });
+        activeSplits.push(split);
+        gsap.set(split.lines, { yPercent: 100 });
+        return split;
+      } catch (e) { /* fall through */ }
+    }
+    gsap.set(el, { opacity: 0, y: 14 * distMul });
+    return null;
+  }
+
   function primeHero(root) {
     var hero = root.querySelector('.hero-reveal');
     if (!hero) return;
@@ -133,6 +147,8 @@
     var visual   = hero.querySelector('[data-hero="visual"]');
     var controls = hero.querySelector('[data-hero="visual-controls"]');
     var pattern  = hero.querySelector('[data-hero="pattern"]');
+    var overline = hero.querySelector('[data-hero="overline"]');
+    var title    = hero.querySelector('[data-hero="title"]');
     var subtitle = hero.querySelector('[data-hero="subtitle"]');
     var cta      = hero.querySelector('[data-hero="cta"]');
 
@@ -141,7 +157,11 @@
     if (subtitle) gsap.set(subtitle, { opacity: 0, y: 12 * distMul });
     if (cta)      gsap.set(cta,      { opacity: 0, y: 8 * distMul });
     if (controls) gsap.set(controls, { opacity: 0, y: 24 * distMul });
-    // Overline/title are SplitText-based — primed inside addLineMask when timeline runs.
+
+    // Split overline and title NOW — lines hidden below their masks. Stored on the hero
+    // element so runHero can retrieve and animate them without re-splitting.
+    hero._revolveOverlineSplit = primeLineMask(overline, distMul);
+    hero._revolveTitleSplit    = primeLineMask(title,    distMul);
   }
 
   function runHero(root) {
@@ -177,11 +197,21 @@
     // 1b. Pattern — soft fade + tiny y-lift, fires alongside the visual wipe
     if (pattern) tl.to(pattern, { opacity: 1, y: 0, duration: 0.9 * durMul, ease: 'power2.out' }, 0.05);
 
-    // 2. Overline — SplitText line-mask
-    if (overline) addLineMask(tl, overline, { at: 0.15, stagger: 0.06, dur: 0.7 * durMul, distMul: mobile ? 0.6 : 1 });
+    // 2. Overline — animate the split lines primed earlier
+    var ovSplit = hero._revolveOverlineSplit;
+    if (ovSplit && ovSplit.lines) {
+      tl.to(ovSplit.lines, { yPercent: 0, duration: 0.7 * durMul, stagger: 0.06 }, 0.15);
+    } else if (overline) {
+      tl.to(overline, { opacity: 1, y: 0, duration: 0.7 * durMul, ease: 'power2.out' }, 0.15);
+    }
 
-    // 3. H1 — SplitText line-mask
-    if (title)    addLineMask(tl, title,    { at: 0.25, stagger: 0.09, dur: 0.9 * durMul, distMul: mobile ? 0.6 : 1 });
+    // 3. H1 — animate the split lines primed earlier
+    var tSplit = hero._revolveTitleSplit;
+    if (tSplit && tSplit.lines) {
+      tl.to(tSplit.lines, { yPercent: 0, duration: 0.9 * durMul, stagger: 0.09 }, 0.25);
+    } else if (title) {
+      tl.to(title, { opacity: 1, y: 0, duration: 0.9 * durMul, ease: 'power2.out' }, 0.25);
+    }
 
     // 4. Subtitle — y-fade
     if (subtitle) tl.to(subtitle, { opacity: 1, y: 0, duration: 0.6 * durMul, ease: 'power2.out' }, 0.55);
@@ -191,20 +221,6 @@
 
     // 6. Visual controls (slide title + arrows) — lift from behind the visual after it reveals
     if (controls) tl.to(controls, { opacity: 1, y: 0, duration: 0.6 * durMul, ease: 'power2.out' }, 0.95);
-  }
-
-  function addLineMask(tl, el, opts) {
-    if (window.SplitText) {
-      try {
-        var split = new SplitText(el, { type: 'lines', linesClass: 'reveal-line', mask: 'lines' });
-        activeSplits.push(split);
-        gsap.set(split.lines, { yPercent: 100 });
-        tl.to(split.lines, { yPercent: 0, duration: opts.dur, stagger: opts.stagger }, opts.at);
-        return;
-      } catch (e) { /* fall through to y-fade */ }
-    }
-    gsap.set(el, { opacity: 0, y: 14 * opts.distMul });
-    tl.to(el, { opacity: 1, y: 0, duration: opts.dur, ease: 'power2.out' }, opts.at);
   }
 
   // ---------- cleanup ----------
