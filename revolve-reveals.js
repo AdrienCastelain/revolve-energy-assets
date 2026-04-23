@@ -73,9 +73,23 @@
   // ---------- scroll reveals ----------
 
   var SCROLL_REVEALS = [
-    { cls: 'text-reveal',  y: 12, dur: 0.6, ease: 'power2.out', start: 'top 80%' },
-    { cls: 'block-reveal', y: 16, dur: 0.7, ease: 'expo.out',   start: 'top 80%' }
+    { cls: 'text-reveal',  y: 12, dur: 0.6, ease: 'power2.out', start: 'top 80%', stagger: null },
+    { cls: 'block-reveal', y: 16, dur: 0.7, ease: 'expo.out',   start: 'top 80%', stagger: 0.08 }
   ];
+
+  // Nearest ancestor (max 6 levels up) that holds 2+ same-class reveals.
+  // Used to group grid/row siblings into a single staggered reveal instead of
+  // firing them individually as each card crosses the trigger line.
+  function nearestGroupAncestor(el, cls, maxDepth) {
+    var parent = el.parentElement;
+    var depth = 0;
+    while (parent && depth < maxDepth) {
+      if (parent.querySelectorAll('.' + cls).length >= 2) return parent;
+      parent = parent.parentElement;
+      depth++;
+    }
+    return null;
+  }
 
   function primeScrollReveals(root) {
     SCROLL_REVEALS.forEach(function (cfg) {
@@ -95,11 +109,27 @@
   function armScrollReveals(root) {
     if (REDUCED) return;
     SCROLL_REVEALS.forEach(function (cfg) {
-      root.querySelectorAll('.' + cfg.cls).forEach(function (el) {
+      var elements = [].slice.call(root.querySelectorAll('.' + cfg.cls));
+      var groupsByAncestor = new Map();
+      var singletons = [];
+
+      elements.forEach(function (el) {
         if (el.dataset.revealArmed === '1') return;
         if (inHero(el)) return;
         el.dataset.revealArmed = '1';
 
+        if (cfg.stagger) {
+          var ancestor = nearestGroupAncestor(el, cfg.cls, 6);
+          if (ancestor) {
+            if (!groupsByAncestor.has(ancestor)) groupsByAncestor.set(ancestor, []);
+            groupsByAncestor.get(ancestor).push(el);
+            return;
+          }
+        }
+        singletons.push(el);
+      });
+
+      singletons.forEach(function (el) {
         var st = ScrollTrigger.create({
           trigger: el,
           start: cfg.start,
@@ -111,6 +141,25 @@
               y: 0,
               duration: cfg.dur * (mobile ? 0.75 : 1),
               ease: cfg.ease
+            });
+          }
+        });
+        activeScrollTriggers.push(st);
+      });
+
+      groupsByAncestor.forEach(function (els, ancestor) {
+        var st = ScrollTrigger.create({
+          trigger: ancestor,
+          start: cfg.start,
+          once: true,
+          onEnter: function () {
+            var mobile = isMobile();
+            gsap.to(els, {
+              opacity: 1,
+              y: 0,
+              duration: cfg.dur * (mobile ? 0.75 : 1),
+              ease: cfg.ease,
+              stagger: cfg.stagger
             });
           }
         });
