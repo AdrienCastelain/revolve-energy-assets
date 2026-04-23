@@ -73,8 +73,8 @@
   // ---------- scroll reveals ----------
 
   var SCROLL_REVEALS = [
-    { cls: 'text-reveal',  y: 12, dur: 0.6, ease: 'power2.out', start: 'top 88%' },
-    { cls: 'block-reveal', y: 16, dur: 0.7, ease: 'expo.out',   start: 'top 88%' }
+    { cls: 'text-reveal',  y: 12, dur: 0.6, ease: 'power2.out', start: 'top 80%' },
+    { cls: 'block-reveal', y: 16, dur: 0.7, ease: 'expo.out',   start: 'top 80%' }
   ];
 
   function primeScrollReveals(root) {
