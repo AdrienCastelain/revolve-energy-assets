@@ -77,14 +77,20 @@
     { cls: 'block-reveal', y: 16, dur: 0.7, ease: 'expo.out',   start: 'top 70%', stagger: 0.15 }
   ];
 
-  // Nearest ancestor (max 6 levels up) that holds 2+ same-class reveals.
-  // Used to group grid/row siblings into a single staggered reveal instead of
-  // firing them individually as each card crosses the trigger line.
+  // Nearest ancestor that holds 2+ same-class reveals AND fits within ~1 viewport.
+  // The viewport-size guard prevents tall vertical stacks (e.g., 4 stacked cards
+  // spanning 1300px) from firing as one batch — in that case the trailing cards
+  // would fade in off-screen and the user would scroll down to find them already
+  // revealed. Tight grids/rows that fit in one screen get grouped; tall stacks
+  // fall through to per-element reveal.
   function nearestGroupAncestor(el, cls, maxDepth) {
     var parent = el.parentElement;
     var depth = 0;
+    var maxH = window.innerHeight * 1.1;
     while (parent && depth < maxDepth) {
-      if (parent.querySelectorAll('.' + cls).length >= 2) return parent;
+      if (parent.querySelectorAll('.' + cls).length >= 2 && parent.offsetHeight <= maxH) {
+        return parent;
+      }
       parent = parent.parentElement;
       depth++;
     }
