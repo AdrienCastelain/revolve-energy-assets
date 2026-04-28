@@ -77,19 +77,24 @@
     { cls: 'block-reveal', y: 16, dur: 0.7, ease: 'expo.out',   start: 'top 70%', stagger: 0.15 }
   ];
 
-  // Nearest ancestor that holds 2+ same-class reveals AND fits within ~1 viewport.
-  // The viewport-size guard prevents tall vertical stacks (e.g., 4 stacked cards
-  // spanning 1300px) from firing as one batch — in that case the trailing cards
-  // would fade in off-screen and the user would scroll down to find them already
-  // revealed. Tight grids/rows that fit in one screen get grouped; tall stacks
-  // fall through to per-element reveal.
+  // Nearest ancestor that holds 2+ same-class reveals whose visual span fits
+  // within ~1 viewport. Measures the gap from the first child's top to the last
+  // child's bottom via getBoundingClientRect — more reliable than container
+  // offsetHeight during init, which can read small if flex/image sizing hasn't
+  // settled yet. Tight grids/rows that fit in one screen get grouped; tall
+  // stacks fall through to per-element reveal so trailing cards don't fade in
+  // off-screen before the user scrolls to them.
   function nearestGroupAncestor(el, cls, maxDepth) {
     var parent = el.parentElement;
     var depth = 0;
-    var maxH = window.innerHeight * 1.1;
+    var maxSpan = window.innerHeight * 1.1;
     while (parent && depth < maxDepth) {
-      if (parent.querySelectorAll('.' + cls).length >= 2 && parent.offsetHeight <= maxH) {
-        return parent;
+      var items = parent.querySelectorAll('.' + cls);
+      if (items.length >= 2) {
+        var first = items[0].getBoundingClientRect();
+        var last = items[items.length - 1].getBoundingClientRect();
+        var span = (last.top + last.height) - first.top;
+        if (span <= maxSpan) return parent;
       }
       parent = parent.parentElement;
       depth++;
@@ -322,7 +327,22 @@
       .then(function () {
         primeHero(document);
         runHero(document);
-        armScrollReveals(document);
+        // Defer arming scroll reveals until window.load so flex/image sizing has
+        // settled. Otherwise nearestGroupAncestor reads child rects before they
+        // reach final size, and tall vertical stacks can be wrongly grouped.
+        var armOnce = false;
+        var armNow = function () {
+          if (armOnce) return;
+          armOnce = true;
+          armScrollReveals(document);
+        };
+        if (document.readyState === 'complete') {
+          armNow();
+        } else {
+          window.addEventListener('load', armNow, { once: true });
+          // Safety net so reveals never miss firing if 'load' is delayed.
+          setTimeout(armNow, 2500);
+        }
 
         if (window.barba && window.barba.hooks) {
           window.barba.hooks.beforeLeave(killAll);
