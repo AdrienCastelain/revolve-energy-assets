@@ -78,32 +78,31 @@
       if (wrap.dataset.gateWired === "1") return;
       wrap.dataset.gateWired = "1";
 
-      var btn = wrap.querySelector("a[data-download-url]") || wrap.querySelector("a[href]");
-      if (!btn) return;
-      var url = btn.getAttribute("data-download-url") || "";
-      var name = btn.getAttribute("data-download-name") || "";
+      // The file URL comes from a hidden link inside the wrapper whose href is bound to the CMS
+      // Downloads file field ([data-download-link]). Fallback: any link carrying data-download-url.
+      var fileLink = wrap.querySelector("a[data-download-link]") || wrap.querySelector("a[data-download-url]");
+      var url = fileLink ? (fileLink.getAttribute("href") || fileLink.getAttribute("data-download-url") || "") : "";
+      var name = (wrap.getAttribute("data-download-name") || (fileLink && fileLink.getAttribute("data-download-name")) || "") + "";
 
-      if (!url || url === "#") { wrap.style.display = "none"; return; }      // no file bound -> hide cleanly
+      if (!url || url === "#") { wrap.style.display = "none"; return; }      // no file on this article -> hide cleanly
+      if (fileLink) fileLink.style.display = "none";                         // the link is a data carrier, not UI
 
-      // MODEL (CEO 2026-06-10): EVERY download is email-gated. If the wrapper is on the page (which
-      // only happens when Downloads is set, via Conditional Visibility), the reader must give an email
-      // the first time. No free path, no Gated switch. The Webflow form is always present in the wrapper.
-      var formBlock = wrap.querySelector(".w-form") || wrap.querySelector(".insight-gate_form") || null;
-
+      // MODEL (CEO 2026-06-10): EVERY article with a file is email-gated. The Webflow form is the gate.
+      // On the first successful submit this session we deliver the file and remember; subsequent gated
+      // downloads that session deliver immediately without re-asking.
+      var formBlock = wrap.querySelector(".w-form") || null;
       wrap.classList.add("is-gated");
-      if (formBlock) watchSuccess(formBlock, url, name);
 
-      btn.addEventListener("click", function (e) {
-        e.preventDefault();
-        if (unlocked()) { startDownload(url, name); return; }               // remembered this session -> straight to file
-        if (!formBlock) {                                                    // gate misbuilt -> fail closed (never leak)
-          btn.textContent = "Download unavailable — please refresh";
-          return;
+      if (unlocked()) {                                                      // already captured this session -> turn the
+        wrap.classList.add("is-unlocked");                                  // form into a direct download button
+        if (formBlock) {
+          var f = formBlock.querySelector("form");
+          f && f.addEventListener("submit", function (e) { e.preventDefault(); startDownload(url, name); });
         }
-        wrap.classList.add("is-gate-open");                                 // CSS reveals .w-form (no FOUC)
-        var inp = formBlock.querySelector('input[type="email"], input[name="email"], input[name="Email"]');
-        inp && inp.focus();
-      });
+        return;
+      }
+
+      if (formBlock) watchSuccess(formBlock, url, name);                     // first time -> Webflow captures, then we download
     });
   }
 
