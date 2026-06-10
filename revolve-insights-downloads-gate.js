@@ -85,25 +85,21 @@
 
       if (!url || url === "#") { wrap.style.display = "none"; return; }      // no file bound -> hide cleanly
 
-      // GATED state is signalled by the PRESENCE of a Webflow form in the wrapper. Webflow can't bind
-      // a Switch to a custom attribute, so instead the form has Conditional Visibility = show only when
-      // Insights.gated is ON. Form present -> gated; form absent -> free download.
+      // MODEL (CEO 2026-06-10): EVERY download is email-gated. If the wrapper is on the page (which
+      // only happens when Downloads is set, via Conditional Visibility), the reader must give an email
+      // the first time. No free path, no Gated switch. The Webflow form is always present in the wrapper.
       var formBlock = wrap.querySelector(".w-form") || wrap.querySelector(".insight-gate_form") || null;
 
-      if (!formBlock) {                                                      // FREE: native link to the file
-        btn.setAttribute("href", url);
-        btn.setAttribute("rel", "noopener");
-        btn.setAttribute("target", "_blank");
-        return;
-      }
-
-      // GATED
       wrap.classList.add("is-gated");
-      watchSuccess(formBlock, url, name);
+      if (formBlock) watchSuccess(formBlock, url, name);
 
       btn.addEventListener("click", function (e) {
         e.preventDefault();
-        if (unlocked()) { startDownload(url, name); return; }               // remembered -> straight to file
+        if (unlocked()) { startDownload(url, name); return; }               // remembered this session -> straight to file
+        if (!formBlock) {                                                    // gate misbuilt -> fail closed (never leak)
+          btn.textContent = "Download unavailable — please refresh";
+          return;
+        }
         wrap.classList.add("is-gate-open");                                 // CSS reveals .w-form (no FOUC)
         var inp = formBlock.querySelector('input[type="email"], input[name="email"], input[name="Email"]');
         inp && inp.focus();
