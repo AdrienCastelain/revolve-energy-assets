@@ -6,8 +6,16 @@ Custom JS / static assets served on https://revolve-energy.webflow.io (and the p
 
 | File | Purpose |
 |---|---|
-| `revolve-reveals.js` | Readable source for hero + scroll reveal animations. |
-| `revolve-reveals.min.js` | Minified build — loaded on the live site via Footer Code. |
+| `revolve-reveals.js` | Readable source for hero + scroll reveal animations. ⚠ live site currently loads `revolve-reveal-engine-1.1.0.js` from Webflow's own CDN — this copy may be superseded; verify before relying on it. |
+| `revolve-reveals.min.js` | Minified build (see note above). |
+| `revolve-insights-downloads-gate.js` | Readable source — Insights downloadable docs + free/email-gated download model. |
+| `revolve-insights-downloads-gate.min.js` | Minified build — loaded on the live site via Footer Code (jsDelivr). |
+
+## CDN URL (jsDelivr)
+
+`revolve-insights-downloads-gate.min.js` is served via:
+`https://cdn.jsdelivr.net/gh/AdrienCastelain/revolve-energy-assets@main/revolve-insights-downloads-gate.min.js`
+(Pin a tag like `@v1.0.0` instead of `@main` for production immutability.)
 
 ## Reveal class contract (apply in Webflow Designer)
 
